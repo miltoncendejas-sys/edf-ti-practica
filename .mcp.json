@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "inventario": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@toolbox-sdk/server@1.16.0",
+        "--prebuilt",
+        "postgres",
+        "--stdio"
+      ],
+      "env": {
+        "POSTGRES_HOST": "localhost",
+        "POSTGRES_PORT": "5433",
+        "POSTGRES_DATABASE": "inventario",
+        "POSTGRES_USER": "lector",
+        "POSTGRES_PASSWORD": "${LECTOR_PASSWORD}"
+      }
+    }
+  }
+}

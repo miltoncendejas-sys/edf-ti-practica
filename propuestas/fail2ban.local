@@ -1,0 +1,136 @@
+# Propuesta de fail2ban a partir del incidente del 21-22 de noviembre (datos ficticios).
+#
+# Evidencia: incidente/auth.log (sshd de srv-app-prod-01) e incidente/nginx-access.log.
+# Cada valor lleva su "Por qué" con las líneas y cifras del log que lo sostienen.
+# "L123" = línea 123 de auth.log; "W123" = línea 123 de nginx-access.log.
+#
+# DÓNDE VA: son definiciones de jaulas, así que se instalan como /etc/fail2ban/jail.local
+# (o /etc/fail2ban/jail.d/edf-incidente.local). NO en /etc/fail2ban/fail2ban.local:
+# ese archivo configura el demonio y fail2ban ignoraría ahí las jaulas.
+# Los filtros de las dos jaulas web van en /etc/fail2ban/filter.d/ (están en
+# propuestas/filter.d/): fail2ban no acepta failregex escrito dentro de la jaula.
+#
+# VALIDADO con fail2ban 1.0.2 (Debian 12) en un contenedor desechable: "fail2ban-client -t"
+# carga la configuración, y las cifras de coincidencias son de fail2ban-regex sobre los
+# logs del incidente. Es una propuesta: no se ha aplicado en ningún servidor.
+# El equipo atacado, srv-app-prod-01, es RHEL 9.2 (docs/servidores.md). Ahí sshd escribe
+# en /var/log/secure o en el journal, y el bloqueo suele hacerlo firewalld (paquete
+# fail2ban-firewalld de EPEL). Repetir "fail2ban-client -t" y "fail2ban-regex" en cada
+# equipo destino antes de activar.
+
+[DEFAULT]
+# Nunca bloquear:
+#  - 127.0.0.1/8 ::1: el propio equipo.
+#  - 10.20.0.15 (monitor): entra por SSH con llave cada 236-363 s (102 sesiones, mediana
+#    298 s) y pide /salud con el mismo ritmo (102 líneas en el log web). Si un cambio de
+#    llave o de ruta lo hiciera fallar, juntaría 5 fallas en ~25 min y fail2ban dejaría
+#    al equipo sin monitoreo justo cuando algo está mal.
+#  - 198.51.100.10 (VerificadorExterno/1.0): pide "/" cada 57-63 s (510 líneas, 0 errores).
+#    Si un despliegue malo devolviera 404 en "/", caería en nginx-404 en 5 min y se
+#    perdería la alerta externa.
+# NO se excluye 10.20.0.0/22 completo: sus 894 líneas web son todas 200 y la única IP
+# interna con fallas SSH llegó a 2 (10.20.0.61, L226-L229, y entró en L231). Los umbrales
+# de abajo ya dejan margen; excluir la red entera ocultaría un equipo interno comprometido.
+# NO se excluye ningún /24: 198.51.100.0/24 contiene al verificador (.10) y al atacante
+# que entró (.23). Tampoco 203.0.113.200 (RastreadorBot): su comportamiento es atípico y
+# sus 404 a /sitemap.xml ya los descarta el filtro de nginx-404.
+ignoreip = 127.0.0.1/8 ::1 10.20.0.15 198.51.100.10
+
+# Por qué 1 día: el ataque lento por SSH duró 5 h 34 min (23:41:07 a 05:15:00) y el escáner
+# web más largo, 5 h 04 min (203.0.113.118, W561 a W1151). Simulado sobre auth.log con
+# bantime = 1h, cada uno de los 4 atacantes lentos volvió y cayó 4 o 5 veces; con 1 día
+# cae una sola vez y ya no vuelve a intentar.
+bantime = 1d
+
+
+[sshd]
+# Filtro de fábrica (sshd, modo normal). En este log cuenta "Failed password" e
+# "Invalid user": un intento con usuario inexistente vale 2. fail2ban-regex: 51 IP con
+# coincidencias; 198.51.100.23 suma 90 (50 + 40).
+enabled = true
+port    = ssh
+
+# Por qué 5: el máximo legítimo son 2 fallas seguidas (mgarcia desde 10.20.0.61, L226-L229,
+# que entró a la tercera en L231). Con 5 ya caen 15 de las 45 IP del ataque repartido.
+# Con 3 caerían 30, pero son IP que hacen 2-3 intentos en ~25 s y no regresan, y un
+# usuario interno quedaría a 1 error de un bloqueo de un día.
+maxretry = 5
+
+# Por qué 1 hora: los 4 atacantes lentos (203.0.113.45, 198.51.100.23, 192.0.2.77,
+# 203.0.113.118) dejan al menos 312 s entre intentos (mediana 379-420 s) y nunca juntan
+# 5 coincidencias en 10 min: con el findtime
+# por defecto NO se bloquean, y 198.51.100.23 entra como "soporte" tras 50 contraseñas
+# fallidas (L2110, 05:13:41). Con 1 hora juntan 5 en 12-21 min y quedan bloqueados a las
+# 23:52:40 (L361), 00:04:34 (L396), 00:26:14 (L538) y 00:32:54 (L566): el acceso de L2110
+# no ocurre.
+findtime = 1h
+
+
+[nginx-sondeo]
+# Rutas que solo un escáner pide (filtro edf-nginx-sondeo). Las 14 del diccionario del
+# ataque aparecen en 147 líneas de 44 IP atacantes y en 0 líneas legítimas, con cualquier
+# código de estado. Se compara solo la ruta, sin pedir 404, para que un acierto también cuente.
+enabled  = true
+filter   = edf-nginx-sondeo
+port     = http,https
+logpath  = /var/log/nginx/access.log
+
+# Por qué 2: los 4 escáneres lentos lanzan 5 sondeos en 9-13 s y llegan a 2 en 1-4 s
+# (W454-W455); con 2 se cortan desde el segundo. No hay falsos positivos con ningún valor,
+# pero 2 tolera que alguien escriba mal una URL una vez.
+maxretry = 2
+
+# Por qué 10 min: dentro de una ráfaga, el mayor espacio entre dos sondeos es de 4 s, así
+# que 10 min sobra. Alargarlo no atrapa a nadie más: las 40 IP del escaneo repartido hacen
+# 1-3 peticiones en 2 s o menos y ninguna regresa.
+findtime = 10m
+
+# Mismas IP en los dos logs: los 4 escáneres lentos del web son los 4 atacantes lentos de
+# SSH, y empiezan por el web 3.5-4 min antes. El reloj del log web va 422 s adelantado
+# (ver incidente/linea-del-tiempo.md); ya corregido, esta jaula los corta en su 2.º sondeo
+# (W455, W507, W534, W563: 23:37:15, 23:49:04, 00:01:46 y 00:16:22), entre 15 y 24 min
+# antes que la jaula sshd.
+# EN QUÉ EQUIPO VA CADA JAULA: sshd, en srv-app-prod-01 (el de auth.log). Las jaulas web,
+# en el equipo que escribe nginx-access.log, que no está confirmado: el desfase de 7 min
+# sugiere otro equipo (un mismo equipo comparte reloj), pero en L65 jlopez revisa un nginx
+# en srv-app-prod-01. En cada equipo se activan solo sus jaulas: fail2ban no arranca si una
+# jaula activa no encuentra su archivo de log.
+# Si nginx y sshd resultan estar en el mismo equipo, bloquear todos los puertos desde aquí
+# adelanta el corte de SSH; descomentar:
+# banaction = %(banaction_allports)s
+# Si son equipos distintos, para cortar también el SSH hay que compartir el bloqueo, por
+# ejemplo en el firewall perimetral.
+
+
+[nginx-404]
+# Red para escáneres con rutas que no estén en el diccionario (filtro edf-nginx-404:
+# cualquier 404, menos /sitemap.xml).
+enabled  = true
+filter   = edf-nginx-404
+port     = http,https
+logpath  = /var/log/nginx/access.log
+
+# Por qué 5 en 10 min: lo legítimo llega como máximo a 2 404 en 10 min (el bot, aun sin
+# descartar /sitemap.xml) y los escáneres hacen 5 en 9-13 s. Bloquea a los 4 escáneres
+# lentos en su primera ráfaga (W464, W510, W537, W566). No subir findtime a 1 h sin
+# descartar /sitemap.xml: en una hora el bot junta 4.
+maxretry = 5
+findtime = 10m
+
+
+# NO INCLUIDO, porque este log no lo justifica:
+#  - Jaula para login web (401/403 o POST): hay 0 POST, 0 respuestas 401 y 0 respuestas 403.
+#    No hay con qué calibrarla.
+#  - bantime.increment y jaula recidive: sirven contra quien regresa después de cumplir su
+#    bloqueo, y en 8.5 h de log ningún bloqueo de 1 día llega a vencer.
+#
+# FUERA DE FAIL2BAN (fail2ban bloquea por IP y no alcanza para lo siguiente):
+#  - Escaneo repartido: 40 IP en el web y 45 en SSH, de 3 redes /24, con 1-3 intentos cada
+#    una y sin regresar. En el web, fail2ban apenas lo frena (con maxretry = 2 evitaría
+#    12 de 81 líneas). Lo que sí lo frena: que nginx responda 444 a las 14 rutas del
+#    diccionario, y en SSH lo siguiente.
+#  - El acceso de L2110 fue por contraseña. Las otras entradas exitosas son por llave
+#    (monitor, jlopez), salvo mgarcia, que usa contraseña desde 10.20.0.61. Propuesta para
+#    sshd_config: PasswordAuthentication no, con "Match Address 10.20.0.0/22" que la permita
+#    mientras mgarcia pasa a llave. PermitRootLogin no: hubo 23 intentos a root y ningún
+#    acceso legítimo como root.
