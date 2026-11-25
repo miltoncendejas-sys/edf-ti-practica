@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reporte de incidente {{activo}}</title>
+<style>
+  :root{
+    --navy:#0D1B3E; --navy2:#16305C; --blue:#1469B9; --cyan:#00D4FF; --green:#00E5A0;
+    --red:#E5484D; --amber:#E8A33D; --grey:#8A95AE; --bg:#F5F6FA; --card:#fff; --line:#e6e8f0; --ink:#1a2340;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  [hidden]{display:none!important}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header{background:var(--navy);color:#fff;padding:48px 0 40px;margin-bottom:36px}
+  header .wrap{padding-bottom:0}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);margin-bottom:12px}
+  h1{font-size:30px;font-weight:800;line-height:1.15;margin-bottom:8px}
+  h1 span{font-weight:300}
+  .sub{color:rgba(255,255,255,.65);font-size:14px}
+  .stripe{height:4px;background:linear-gradient(90deg,var(--blue),var(--cyan))}
+  h2{font-size:20px;font-weight:800;margin:40px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:15px;font-weight:700;margin:18px 0 6px}
+  p{margin-bottom:10px}
+  .verdict{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--red);border-radius:14px;padding:24px 26px;box-shadow:0 6px 24px rgba(13,27,62,.06)}
+  .badge{display:inline-block;background:var(--red);color:#fff;font-weight:800;font-size:13px;padding:5px 14px;border-radius:100px;letter-spacing:.5px}
+  .badge2{display:inline-block;background:#fdf1de;color:#a9711a;font-weight:800;font-size:12px;padding:4px 12px;border-radius:100px;margin-left:6px}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:20px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center}
+  .stat .n{font-size:26px;font-weight:800}
+  .stat .l{font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+  .tw{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:13.5px;margin:8px 0 6px}
+  th{background:var(--navy2);color:#fff;text-align:left;padding:10px 12px;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:700}
+  td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:top}
+  tr:nth-child(even) td{background:#fafbff}
+  tr.key td{background:#fff4f4!important;font-weight:600}
+  .pill{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:100px;white-space:nowrap}
+  .high{background:#fde8e0;color:#c2410c} .ok{background:#e3f9ef;color:#068a5b} .med{background:#fdf1de;color:#a9711a} .low{background:#eef1f8;color:#566677}
+  .info{background:#e8f3fc;color:#1568a8} .acc{background:#f2eefb;color:#6b45c4}
+  .pend{display:inline-block;background:#fdf1de;color:#a9711a;border:1px solid #f3d9ac;font-size:11.5px;font-weight:700;padding:0 7px;border-radius:6px;white-space:nowrap}
+  .finding{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:14px 0;box-shadow:0 4px 16px rgba(13,27,62,.05)}
+  .finding.highc{border-left:6px solid #E8603D} .finding.medc{border-left:6px solid var(--amber)} .finding.infoc{border-left:6px solid var(--blue)}
+  .fh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .fh .id{font-weight:800;font-size:15px}
+  .kv{font-size:12.5px;color:#555;margin:2px 0}
+  code{background:#f0f2f8;border:1px solid #e2e6f0;border-radius:5px;padding:1px 6px;font-family:'Cascadia Code',Consolas,monospace;font-size:12.5px;color:#33406b;word-break:break-word}
+  .box{background:#fbfcff;border:1px dashed var(--line);border-radius:10px;padding:12px 14px;margin:8px 0;font-size:13px}
+  .ask{background:#f0fbf6;border:1px solid #cdeede;border-radius:10px;padding:14px 16px;margin-top:14px;font-size:14px}
+  .ask b{color:#068a5b}
+  ul{margin:6px 0 10px 22px} li{margin-bottom:5px}
+  ol{margin:6px 0 10px 22px}
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:20px 0;font-size:13.5px}
+  .toc ol{columns:2;margin-bottom:0}
+  .toc a{color:var(--blue);text-decoration:none}
+  .foot{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--grey);text-align:center}
+  .tag{font-size:11px;color:var(--grey)}
+  .conf{display:inline-block;background:rgba(229,72,77,.18);color:#ffb3b5;border:1px solid rgba(229,72,77,.45);font-size:11px;font-weight:800;letter-spacing:2px;padding:3px 10px;border-radius:6px;margin-top:14px}
+  .meta{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 24px;margin-top:16px;font-size:13px;color:rgba(255,255,255,.8)}
+  .meta b{color:#fff}
+  .meta .pend{background:rgba(232,163,61,.2);color:#ffd79a;border-color:rgba(232,163,61,.5)}
+  @media (max-width:720px){ .grid{grid-template-columns:repeat(2,1fr)} h1{font-size:24px} .meta{grid-template-columns:1fr} .toc ol{columns:1} }
+  @media print{
+    body{background:#fff;font-size:12px}
+    header,.stripe,th,.badge,.pend,.pill,tr.key td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .toc{display:none}
+    .wrap{max-width:none;padding-bottom:20px}
+    @page{margin:14mm 12mm}
+    h2,h3{break-after:avoid} tr,.finding,.verdict,.grid,.box{break-inside:avoid} thead{display:table-header-group}
+  }
+</style>
+</head>
+<body>
+<!--
+  Plantilla del reporte de incidente (skill reporte-incidente).
+  - Archivo autónomo: sin fuentes, scripts ni imágenes externas.
+  - Reemplaza cada {{...}}. Lo que la evidencia no muestra va como <span class="pend">[pendiente]</span>.
+  - Clases útiles: .pill + (high | med | low | ok | info | acc), tr.key (fila clave de la línea del tiempo),
+    .finding + (highc | medc | infoc) para causas y hallazgos, .box para notas, .ask para lo que se pide.
+  - En este HTML el resumen va en la caja de veredicto y NO lleva número: las secciones
+    corren uno respecto del .md (Impacto = 1, Acciones = 4). Revisa cada «(sección N)».
+-->
+<div class="stripe"></div>
+<header>
+  <div class="wrap">
+    <p class="eyebrow">Grupo EDF · TI · Reporte de incidente</p>
+    <h1><span>{{Qué pasó, en pocas palabras, p. ej. «Acceso no autorizado por SSH a»}}</span> {{activo afectado}}</h1>
+    <p class="sub">Para la Dirección · Periodo: {{inicio}} a {{fin}} ({{zona horaria}}) · Reporte del {{fecha del reporte}}</p>
+    <div class="meta">
+      <div><b>Folio:</b> <span class="pend">[pendiente]</span></div>
+      <div><b>Elaboró:</b> <span class="pend">[pendiente]</span></div>
+      <div><b>Severidad:</b> <span class="pend">[pendiente]</span> · propuesta de TI: {{Alta | Media | Baja}}</div>
+      <div><b>Estado:</b> {{abierto | cerrado}} · contención <span class="pend">[pendiente]</span></div>
+    </div>
+    <span class="conf">CONFIDENCIAL</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <p class="tag" style="margin-bottom:14px">{{Si aplica: «Datos ficticios.»}} Fuente principal: <code>{{análisis base}}</code>; sus cifras y líneas citadas se verificaron contra <code>{{logs}}</code>. Lo que la evidencia no muestra va marcado <span class="pend">[pendiente]</span>.</p>
+
+  <div class="verdict">
+    <span class="badge">{{HALLAZGO PRINCIPAL, p. ej. ACCESO NO AUTORIZADO CONFIRMADO}}</span><span class="badge2">{{matiz, p. ej. «Sin privilegios de administrador · alcance real por confirmar»}}</span>
+    <p style="margin-top:14px">{{Qué pasó y cómo, en español llano.}}</p>
+    <p>{{Si entraron o no, y qué no se sabe}} <span class="pend">[pendiente]</span>.</p>
+    <div class="ask">
+      <b>Lo que se pide a la Dirección</b>
+      <ol style="margin-top:6px;margin-bottom:0">
+        <li>Autorizar las acciones de contención {{números}} (sección 4).</li>
+        <li>Asignar responsables con nombre y fechas <span class="pend">[pendiente]</span>.</li>
+        <li>Decidir con Legal si hay obligación de notificar <span class="pend">[pendiente]</span>.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 5 cifras. Colores: var(--red) grave, #E8603D alto, var(--navy2) neutro, var(--amber) medio, #068a5b bueno -->
+  <div class="grid">
+    <div class="stat"><div class="n" style="color:var(--red)">{{n}}</div><div class="l">{{etiqueta}}</div></div>
+    <div class="stat"><div class="n" style="color:#E8603D">{{n}}</div><div class="l">{{etiqueta}}</div></div>
+    <div class="stat"><div class="n" style="color:var(--navy2)">{{n}}</div><div class="l">{{etiqueta}}</div></div>
+    <div class="stat"><div class="n" style="color:var(--amber)">{{n}}</div><div class="l">{{etiqueta}}</div></div>
+    <div class="stat"><div class="n" style="color:#068a5b">{{n}}</div><div class="l">{{etiqueta}}</div></div>
+  </div>
+
+  <nav class="toc" aria-label="Índice">
+    <ol>
+      <li><a href="#impacto">Impacto</a></li>
+      <li><a href="#linea">Línea del tiempo</a></li>
+      <li><a href="#causa">Causa raíz</a></li>
+      <li><a href="#acciones">Acciones y responsables</a></li>
+      <li><a href="#pendientes">Información pendiente</a></li>
+      <li><a href="#evidencia">Evidencia</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="impacto">1 · Impacto</h2>
+  <h3>Confirmado por la evidencia</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Tema</th><th>Qué se sabe</th><th>Evidencia</th></tr></thead>
+    <tr><td><b>{{tema}}</b></td><td>{{hecho}}</td><td><code>{{archivo:línea}}</code></td></tr>
+  </table></div>
+  <h3>Desconocido</h3>
+  <ul>
+    <li>{{lo que falta saber}} <span class="pend">[pendiente]</span>.</li>
+  </ul>
+
+  <h2 id="linea">2 · Línea del tiempo</h2>
+  <p class="tag">{{Reloj de referencia y corrección aplicada.}}</p>
+  <div class="tw"><table>
+    <thead><tr><th style="width:150px">Hora</th><th>Qué pasó</th><th style="width:190px">Evidencia</th></tr></thead>
+    <tr><td>{{hora}}</td><td>{{evento}}</td><td><code>{{archivo:línea}}</code></td></tr>
+    <tr class="key"><td>{{hora}}</td><td><b>{{evento clave}}</b></td><td><code>{{archivo:línea}}</code></td></tr>
+    <tr><td><span class="pend">[pendiente]</span></td><td><b>Detección:</b> cuándo y cómo se enteró TI.</td><td>—</td></tr>
+    <tr><td><span class="pend">[pendiente]</span></td><td><b>Contención:</b> cuándo se contuvo.</td><td>—</td></tr>
+  </table></div>
+  <div class="box"><b>En cifras:</b> {{totales verificados contra los logs}}</div>
+
+  <h2 id="causa">3 · Causa raíz</h2>
+  <div class="finding highc">
+    <div class="fh"><span class="id">C-1</span><span class="pill high">CAUSA DIRECTA</span><span>{{causa}}</span></div>
+    <p>{{evidencia y lo que queda}} <span class="pend">[pendiente]</span>.</p>
+  </div>
+  <div class="finding medc">
+    <div class="fh"><span class="id">C-2</span><span class="pill med">CONTRIBUYENTE</span><span>{{causa}}</span></div>
+    <p>{{evidencia}}</p>
+  </div>
+  <div class="finding infoc">
+    <div class="fh"><span class="id">H-1</span><span class="pill info">HALLAZGO ADICIONAL</span><span>{{hallazgo}} · relación no establecida <span class="pend">[pendiente]</span></span></div>
+    <ul><li>{{hecho con su evidencia}}</li></ul>
+  </div>
+
+  <h2 id="acciones">4 · Acciones y responsables</h2>
+  <p>{{Equipo responsable según el inventario.}} Los nombres, las fechas y el estado están <span class="pend">[pendiente]</span> porque no constan en la evidencia.</p>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>Acción</th><th>Tipo</th><th>Responsable</th><th>Fecha</th><th>Estado</th></tr></thead>
+    <!-- Tipos: <span class="pill high">Contención</span> <span class="pill acc">Investigación</span>
+         <span class="pill ok">Corrección de fondo</span> <span class="pill info">Prevención</span>
+         <span class="pill low">Corrección</span> <span class="pill med">Decisión</span> -->
+    <tr><td>1</td><td>{{acción}}</td><td><span class="pill high">Contención</span></td><td>{{equipo}} · persona <span class="pend">[pendiente]</span></td><td><span class="pend">[pendiente]</span></td><td><span class="pend">[pendiente]</span></td></tr>
+  </table></div>
+
+  <h2 id="pendientes">5 · Información pendiente</h2>
+  <ol>
+    <li>Folio, autor y severidad oficial del reporte.</li>
+    <li>Hora y forma de detección. Hora de contención.</li>
+    <li>{{cada [pendiente] del reporte}}</li>
+  </ol>
+
+  <h2 id="evidencia">6 · Evidencia</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Archivo</th><th>Qué es</th></tr></thead>
+    <tr><td><code>{{archivo}}</code></td><td>{{qué es}}</td></tr>
+  </table></div>
+
+  <div class="foot">
+    Reporte de incidente · {{activo}} · {{periodo}} · Elaborado el {{fecha}} a partir de {{fuentes}} (solo lectura)<br>
+    Documento interno · CONFIDENCIAL · Para la Dirección
+  </div>
+</div>
+</body>
+</html>
