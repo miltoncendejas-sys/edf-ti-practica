@@ -11,3 +11,8 @@ respaldos/
 
 # Reportes que exporta el laboratorio de la Sesión 3
 reportes/
+
+# Dependencias de Node (herramientas/mcp-inventario); se reinstalan con npm ci
+node_modules/
+# Copias temporales que crea y borra herramientas/mcp-inventario/prueba.js
+herramientas/mcp-inventario/.prueba-*/
